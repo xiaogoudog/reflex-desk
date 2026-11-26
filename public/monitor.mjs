@@ -11,10 +11,11 @@ async function json(url,options={}){
 }
 function summary(){
   if(!state)return `<p class="feed-note">${issue?esc(issue):"正在读取后台运行记录…"}</p>`;
-  const clock=state.clocks?.[0],run=state.run,late=Date.now()-(run?.finished||run?.started||0)>25*60000;
-  const status=!run?"等待首次后台采集":!run.finished?"本轮采集中":late?"最近一轮已超过 25 分钟":run.warnings?"已完成，部分源待重试":"最近一轮已完成";
+  const clock=state.clocks?.[0],run=state.run;
+  const status=!run?"等待首次后台采集":!run.finished?"本轮采集中":run.warnings?"已完成，部分源待重试":"最近一轮已完成";
+  const trigger=clock?(clock.finished?"服务器定时采集完成于 "+stamp(clock.finished):clock.issue?"服务器定时采集遇到异常 · "+esc(clock.issue):"服务器定时采集开始于 "+stamp(clock.started)):"后台任务通过站点采集接口运行。";
   return `<div class="monitor-stats"><div><small>后台采集</small><b>${esc(status)}</b><span>${run?(run.finished?"完成 ":"开始 ")+stamp(run.finished||run.started):"尚无运行记录"} · 北京时间</span></div><div><small>本轮已检查</small><b>${run?run.completed+" / "+run.total:"—"}</b><span>${run?run.warnings+" 个源需关注":"按数据源与代码统计"}</span></div><div><small>已归档的观察与公告</small><b>${Number(state.stats?.points||0).toLocaleString()}</b><span>另有 ${Number(state.stats?.revisions||0).toLocaleString()} 条修订记录</span></div></div>
-   <p class="feed-note">服务器定时器 · ${clock?(clock.finished?"实测完成 "+stamp(clock.finished):clock.issue?"本次异常 · "+esc(clock.issue):"触发时间 "+stamp(clock.started)):"等待首次独立触发"}。后台轮次与网页访问分别记录。</p>
+   <p class="feed-note">${trigger} 后台完成时间与网页刷新分别记录。</p>
    ${state.issues?.length?`<details class="monitor-issues"><summary>查看 ${state.issues.length} 项来源状态</summary>${state.issues.map(i=>`<p><b>${esc(shortNames(i.feed))}</b> · ${esc(i.issue)}</p>`).join("")}</details>`:""}${issue?`<p class="feed-note source-issue">${esc(issue)}</p>`:""}`;
 }
 function watched(symbol){
@@ -73,6 +74,6 @@ export async function archiveFilter(f,v){feed=f;filter=v;rows=[];cursor=null;awa
 export const loadOlder=()=>loadHistory(true);
 export function monitorView(){
   return `<div class="page-heading"><div><h1>采集与归档</h1><p>查看后台运行记录，按统计期对照原始值和修订值。所有采集记录以北京时间显示。</p></div><button type="button" class="btn soft" data-act="archive-refresh">${icon("refresh",16)}刷新记录</button></div>
-  <section class="card pad"><div class="card-title"><h2>后台运行</h2><small>目标间隔 10 分钟</small></div><div id="monitor-status">${summary()}</div><div class="watchlist"><b>持续跟踪的公司</b><div id="monitor-symbols">${(state?.symbols||[]).map(s=>`<span class="tag neutral">${esc(s)}</span>`).join(" ")}</div><a href="#research/company">管理跟踪代码 ${icon("chev",13)}</a></div></section>
+  <section class="card pad"><div class="card-title"><h2>后台运行</h2></div><div id="monitor-status">${summary()}</div><div class="watchlist"><b>持续跟踪的公司</b><div id="monitor-symbols">${(state?.symbols||[]).map(s=>`<span class="tag neutral">${esc(s)}</span>`).join(" ")}</div><a href="#research/company">管理跟踪代码 ${icon("chev",13)}</a></div></section>
   <section class="card pad section-next"><div class="card-title"><h2>新增与修订</h2></div><div id="archive-controls">${controls()}</div><div id="archive-table">${table()}</div></section>`;
 }
